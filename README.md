@@ -1,10 +1,40 @@
 # Originación de Créditos
 
-Plataforma de microservicios que recorre el ciclo de un crédito de consumo: solicitud, evaluación de riesgo, revisión por un analista, aprobación y desembolso con plan de pagos.
+[![CI](https://github.com/kssz17/originacion-creditos/actions/workflows/ci.yml/badge.svg)](https://github.com/kssz17/originacion-creditos/actions/workflows/ci.yml)
 
-Es un proyecto de portafolio. Los datos son ficticios y los umbrales de riesgo son ilustrativos, no una política de crédito real.
+Plataforma de microservicios que gestiona un crédito de consumo de principio a fin: solicitud, evaluación de riesgo, revisión por un analista, desembolso, pago de cuotas y liquidación.
+
+![Dashboard del analista con embudo de solicitudes, tasa de aprobación, mora y desembolsos por mes](docs/capturas/analista.jpg)
+
+Es un proyecto de portafolio. Los datos son ficticios, los pagos son simulados y los umbrales de riesgo son ilustrativos, no una política de crédito real.
 
 **Stack:** Java 21 · Spring Boot 4 · Spring Cloud Gateway · Spring Security · JPA · Flyway · PostgreSQL · Resilience4j · Testcontainers · Angular 21 · Docker Compose · GitHub Actions
+
+## Qué demuestra
+
+- **Dinero seguro:** idempotencia en solicitudes y pagos, `BigDecimal` y un bloqueo pesimista que impide cobrar dos veces la misma cuota, comprobado con pagos simultáneos.
+- **Control bancario:** auditoría inmutable protegida por la base de datos y segregación de funciones: quien aprueba no puede desembolsar.
+- **Resiliencia:** si un servicio cae, la solicitud no se pierde y se reintenta sola.
+- **Decisiones explicables:** cada score muestra qué factores lo formaron.
+- **Calidad:** pruebas de integración con PostgreSQL real, prueba E2E y CI en cada cambio.
+
+## Capturas
+
+**Panel del cliente:** saldo, próxima cuota, avisos de mora y endeudamiento.
+
+![Panel del cliente con saldo pendiente y aviso de cuotas vencidas](docs/capturas/cliente.jpg)
+
+**Comparador de ofertas:** cuotas e intereses por plazo, calculados en el backend.
+
+![Comparador de créditos por monto y plazo](docs/capturas/ofertas.jpg)
+
+**Pagos:** plan de amortización con cuotas pagadas, vencidas y pendientes.
+
+![Plan de pagos con recargo por mora y botón de pago](docs/capturas/pagos.jpg)
+
+**Explicación del score:** los puntos que aportó cada factor.
+
+![Desglose del score por endeudamiento, antigüedad laboral y monto](docs/capturas/score.jpg)
 
 ## Arquitectura
 
@@ -124,3 +154,9 @@ El script E2E comprueba la seguridad, la idempotencia, la segregación de funcio
 - Añadir tracing distribuido con OpenTelemetry y paneles de Grafana.
 - Limitar los intentos de login.
 - Bloquear filas al recoger pendientes para ejecutar varias réplicas sin trabajo repetido.
+
+## Autor
+
+**Kevin Zambrano**, desarrollador backend Java.
+
+[Portafolio](https://kssz17.github.io/portafolio/) · [LinkedIn](https://www.linkedin.com/in/kevin-siabato-backend/) · [GitHub](https://github.com/kssz17)
