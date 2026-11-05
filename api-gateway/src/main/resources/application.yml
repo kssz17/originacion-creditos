@@ -1,0 +1,38 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: identidad
+              uri: ${IDENTIDAD_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/auth/**
+              filters:
+                - StripPrefix=1
+            - id: clientes
+              uri: ${CLIENTES_URL:http://localhost:8082}
+              predicates:
+                - Path=/api/clientes/**
+              filters:
+                - StripPrefix=1
+            - id: creditos
+              uri: ${CREDITOS_URL:http://localhost:8083}
+              predicates:
+                - Path=/api/solicitudes/**
+              filters:
+                - StripPrefix=1
+
+jwt:
+  secreto: ${JWT_SECRETO}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus

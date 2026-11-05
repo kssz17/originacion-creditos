@@ -1,0 +1,98 @@
+name: originacion-creditos
+
+x-servicio: &servicio
+  restart: unless-stopped
+  networks: [interna]
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_CLAVE:?Define POSTGRES_CLAVE en .env}
+      DB_CLAVE_SERVICIOS: ${DB_CLAVE_SERVICIOS:?Define DB_CLAVE_SERVICIOS en .env}
+    volumes:
+      - datos-postgres:/var/lib/postgresql/data
+      - ./infra/postgres:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d creditos"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [interna]
+
+  servicio-identidad:
+    <<: *servicio
+    build: ./servicio-identidad
+    environment:
+      SPRING_PROFILES_ACTIVE: demo
+      DB_URL: jdbc:postgresql://postgres:5432/identidad
+      DB_USUARIO: identidad
+      DB_CLAVE: ${DB_CLAVE_SERVICIOS}
+      JWT_SECRETO: ${JWT_SECRETO:?Define JWT_SECRETO en .env}
+      DEMO_CLAVE: ${DEMO_CLAVE:?Define DEMO_CLAVE en .env}
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  servicio-clientes:
+    <<: *servicio
+    build: ./servicio-clientes
+    environment:
+      SPRING_PROFILES_ACTIVE: demo
+      DB_URL: jdbc:postgresql://postgres:5432/clientes
+      DB_USUARIO: clientes
+      DB_CLAVE: ${DB_CLAVE_SERVICIOS}
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  servicio-evaluacion:
+    <<: *servicio
+    build: ./servicio-evaluacion
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/evaluacion
+      DB_USUARIO: evaluacion
+      DB_CLAVE: ${DB_CLAVE_SERVICIOS}
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  servicio-creditos:
+    <<: *servicio
+    build: ./servicio-creditos
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/creditos
+      DB_USUARIO: creditos
+      DB_CLAVE: ${DB_CLAVE_SERVICIOS}
+      CLIENTES_URL: http://servicio-clientes:8082
+      EVALUACION_URL: http://servicio-evaluacion:8084
+    depends_on:
+      postgres: { condition: service_healthy }
+      servicio-clientes: { condition: service_healthy }
+      servicio-evaluacion: { condition: service_healthy }
+
+  api-gateway:
+    <<: *servicio
+    build: ./api-gateway
+    environment:
+      JWT_SECRETO: ${JWT_SECRETO}
+      IDENTIDAD_URL: http://servicio-identidad:8081
+      CLIENTES_URL: http://servicio-clientes:8082
+      CREDITOS_URL: http://servicio-creditos:8083
+    ports:
+      - "8080:8080"
+    depends_on:
+      servicio-identidad: { condition: service_healthy }
+      servicio-creditos: { condition: service_healthy }
+
+  frontend:
+    <<: *servicio
+    build: ./frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      api-gateway: { condition: service_healthy }
+
+volumes:
+  datos-postgres:
+
+networks:
+  interna:
